@@ -157,6 +157,7 @@ static const struct razer_usb_device razer_usbdev_table[] = {
 	USB_MOUSE(0x1532, RAZER_NAGA_PID_2012, &razer_naga_base_ops),
 	USB_MOUSE(0x1532, RAZER_NAGA_PID_HEX, &razer_naga_base_ops),
 	USB_MOUSE(0x1532, RAZER_NAGA_PID_2014, &razer_naga_base_ops),
+	USB_MOUSE(0x1532, RAZER_NAGA_PID_HEX_2014, &razer_naga_base_ops),
 	USB_MOUSE(0x1532, 0x0101, &razer_copperhead_base_ops),
 	USB_MOUSE(0x1532, 0x0005, &razer_boomslangce_base_ops),
 	USB_MOUSE(0x1532, 0x0017, &razer_imperator_base_ops),
@@ -423,7 +424,7 @@ static bool mouse_apply_one_config(struct config_file *f,
 		int profile;
 
 		err = razer_string_to_int(value, &profile);
-		if (err || profile < 1 || profile > m->nr_profiles)
+		if (err || profile < 1 || (unsigned int)profile > m->nr_profiles)
 			goto error;
 		if (m->set_active_profile) {
 			prof = find_prof(m, profile - 1);
@@ -457,7 +458,7 @@ static bool mouse_apply_one_config(struct config_file *f,
 				if ((int)(mappings[i].res[RAZER_DIM_0]) != resolution)
 					continue;
 			} else {
-				if (mappings[i].nr != resolution)
+				if (mappings[i].nr != (unsigned int)resolution)
 					continue;
 			}
 			err = prof->set_dpimapping(prof, NULL, &mappings[i]);
@@ -485,7 +486,7 @@ static bool mouse_apply_one_config(struct config_file *f,
 		if (nr <= 0)
 			goto error;
 		for (i = 0; i < nr; i++) {
-			if (freqs[i] != freq)
+			if (freqs[i] != (enum razer_mouse_freq)freq)
 				continue;
 			err = prof->set_freq(prof, freqs[i]);
 			razer_free_freq_list(freqs, nr);
@@ -1033,8 +1034,8 @@ static void razer_usb_release(struct razer_usb_context *ctx,
 
 int razer_generic_usb_claim(struct razer_usb_context *ctx)
 {
-	unsigned int tries;
-	int err, i, config;
+	unsigned int tries, i;
+	int err, config;
 	struct razer_usb_interface *interf;
 
 	err = libusb_open(ctx->dev, &ctx->h);
